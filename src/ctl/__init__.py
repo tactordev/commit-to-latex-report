@@ -13,6 +13,8 @@ def main() -> None:
     parser.add_argument("path", help="Path to the git repository")
     args = parser.parse_args()
     path = args.path
+
+    print("Running git log command...")
     out = subprocess.check_output(["git", "log", "--stat", "--after=\"2026-07-01\""], cwd=path)
 
     lines = out.splitlines()
@@ -20,6 +22,7 @@ def main() -> None:
 
     with open("out.txt", "w") as f:
         f.write(report(out))
+        print("Report exported to out.txt.")
     return
 
 
@@ -27,9 +30,11 @@ def parseLog(out):
     global path
     rows = ""
     
+    print("Getting origin URL...")
     origin = subprocess.check_output(["git", "remote", "get-url", "origin"], cwd=path).decode("utf-8").strip()
 
 
+    print("Parsing git log output...")
     for log in re.split(r"\n\ncommit ", out.decode("utf-8")):
         if log.strip() == "":
             continue
@@ -66,7 +71,7 @@ def parseLog(out):
             deletions = "0"
         
 
-        rows += f"\href[[{origin[:-4]}/commit/{hash.split("commit ")[1] if "commit" in hash else hash}]][[\\textbf[[{hash.split("commit ")[1][:5] if "commit" in hash else hash[:5]}]]]] & {authorName} & {date} & \\color[green]{insertions} & \\color[red]{deletions} \\\\ \\hline\n"
+        rows += f"\\href[[{origin[:-4]}/commit/{hash.split("commit ")[1] if "commit" in hash else hash}]][[\\textbf[[{hash.split("commit ")[1][:5] if "commit" in hash else hash[:5]}]]]] & {authorName} & {date} & \\color[green]{insertions} & \\color[red]{deletions} \\\\ \\hline\n"
     return rows
 
 def report(out):
