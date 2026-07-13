@@ -184,10 +184,11 @@ cython_debug/
 
 
 
-*uv
+*uv*
 *.pdf
 *.gz
 *temp
 *.aux
 *.out
 *.txt
+*out*

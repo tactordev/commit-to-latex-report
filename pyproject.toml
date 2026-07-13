@@ -7,7 +7,7 @@ authors = [
     { name = "Tactor", email = "119103845+tactordev@users.noreply.github.com" }
 ]
 requires-python = ">=3.13"
-dependencies = []
+dependencies = ["pdflatex"]
 
 [project.scripts]
 ctl = "ctl:main"

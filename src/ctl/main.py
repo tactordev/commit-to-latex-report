@@ -1,6 +1,5 @@
-import os, shutil, re, os, subprocess, argparse
+import os, shutil, re, os, subprocess, argparse, tempfile
 from .latex import Document, Table
-
 
 
 import stat
@@ -14,6 +13,7 @@ def readonly_to_writable(foo, file, err):
 
 def Main():
     global path
+    temp_dir = None
 
     parser = argparse.ArgumentParser()
     parser.add_argument("path", help="Path to the git repository", nargs="?")
@@ -21,11 +21,11 @@ def Main():
     args = parser.parse_args()
 
     if args.url is not None and args.url.strip() != "":
-        path = os.path.join("temp", "repo")
+        temp_dir = tempfile.mkdtemp(prefix="ctl-")
+        path = os.path.join(temp_dir, "repo")
 
         print("Cloning repository...")
-        os.makedirs("temp", exist_ok=True)
-        subprocess.run(["git", "clone", args.url.strip(), "repo"], check=True, cwd="./temp")
+        subprocess.run(["git", "clone", args.url.strip(), "repo"], check=True, cwd=temp_dir)
 
     else:
         path = args.path
@@ -34,14 +34,25 @@ def Main():
     out = subprocess.check_output(["git", "log", "--stat", "--after=\"2026-07-01\""], cwd=path)
 
 
-    with open("out.txt", "w") as f:
+    with open("out.tex", "w") as f:
         f.write(report(out))
+
+    subprocess.run([
+        "pdflatex",
+        "-interaction=nonstopmode",
+        "-halt-on-error",
+        "out.tex",
+    ], check=True)
+
+    if not os.path.exists("out.pdf"):
+        return print("PDF file not generated.")
 
     print("Cleaning up temporary files...")
 
-    shutil.rmtree("temp", ignore_errors=True, dir_fd=True)
+    if temp_dir is not None:
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
-    print("Report exported to out.txt.")
+    print("PDF file generated: file:///" + os.path.abspath("out.pdf"), "(CTRL + Click to open).")
     return
 
 
