@@ -1,0 +1,56 @@
+\documentclass{article}
+        \title{Commit Report}
+        \date{\today}
+
+        \usepackage{hyperref}
+\usepackage{xcolor}
+
+
+
+        
+
+        \begin{document}
+
+        \maketitle
+        \newpage
+
+        \begin{table}{}
+        \centering
+        \vline
+        \begin{tabular}{c|c|c|c|c|c|c}
+            \href{{https://github.com/react/react/commit/c0c39a6b3907eaab35f43074949e2957a2a734c1}}{{\textbf{{c0c39}}}} & Sophie Alpert & 2026-07-9 & \color{green}25 & \color{red}56 \\ \hline
+\href{{https://github.com/react/react/commit/5123b063a7b3cd5c42ea2be2ccebe4e68d8b12e3}}{{\textbf{{5123b}}}} & Sophie Alpert & 2026-07-8 & \color{green}215 & \color{red}31 \\ \hline
+\href{{https://github.com/react/react/commit/4400d6c802df45407e7303a6f84a8dcfabde84ff}}{{\textbf{{4400d}}}} & Sophie Alpert & 2026-07-8 & \color{green}211 & \color{red}3 \\ \hline
+\href{{https://github.com/react/react/commit/3b9b59f7cb4ab9f00c84d9b8cdf2e45eb4bb4b88}}{{\textbf{{3b9b5}}}} & Sophie Alpert & 2026-07-8 & \color{green}67 & \color{red}20 \\ \hline
+\href{{https://github.com/react/react/commit/df4bd1b4e99269ac9f3ce3a47ef2e23f76fb1b97}}{{\textbf{{df4bd}}}} & Sophie Alpert & 2026-07-8 & \color{green}20 & \color{red}70 \\ \hline
+\href{{https://github.com/react/react/commit/e3e813d4d6cd61746676f207f0847c744fb3ad64}}{{\textbf{{e3e81}}}} & dan & 2026-07-8 & \color{green}4 & \color{red}0 \\ \hline
+\href{{https://github.com/react/react/commit/994ebf9dce1708045d9570f2fab7702be4763f97}}{{\textbf{{994eb}}}} & dan & 2026-07-8 & \color{green}62 & \color{red}10 \\ \hline
+\href{{https://github.com/react/react/commit/3039f5d3f660471a222393e84bc9d3a74691f8df}}{{\textbf{{3039f}}}} & dan & 2026-07-8 & \color{green}19 & \color{red}0 \\ \hline
+\href{{https://github.com/react/react/commit/5a90a5a7a54d88105b203cfc3230325f495948ae}}{{\textbf{{5a90a}}}} & lauren & 2026-07-7 & \color{green}175 & \color{red}12 \\ \hline
+\href{{https://github.com/react/react/commit/eb343c7ccb2d475cbdf0231b4af3d1df7d4135d6}}{{\textbf{{eb343}}}} & Sophie Alpert & 2026-07-7 & \color{green}362 & \color{red}7 \\ \hline
+\href{{https://github.com/react/react/commit/12a4baeca157fa8ae0cbd6463595ea7f3af10c26}}{{\textbf{{12a4b}}}} & lauren & 2026-07-7 & \color{green}0 & \color{red}0 \\ \hline
+\href{{https://github.com/react/react/commit/129154cedf159a4f4a76634889e98d06760278cc}}{{\textbf{{12915}}}} & Sophie Alpert & 2026-07-7 & \color{green}70 & \color{red}2 \\ \hline
+\href{{https://github.com/react/react/commit/b8f50c93942929e0736941d2065bce5598d6484b}}{{\textbf{{b8f50}}}} & Sophie Alpert & 2026-07-7 & \color{green}45 & \color{red}2 \\ \hline
+\href{{https://github.com/react/react/commit/91cd8128741854d3281ca6511d8c3d76e877be4c}}{{\textbf{{91cd8}}}} & Kurtd Daniel Bigtas & 2026-07-7 & \color{green}55 & \color{red}23 \\ \hline
+\href{{https://github.com/react/react/commit/fc08d760317d909dbda478e8f9b577dced1f5954}}{{\textbf{{fc08d}}}} & Dmitrii & 2026-07-7 & \color{green}73 & \color{red}0 \\ \hline
+\href{{https://github.com/react/react/commit/08725f213248f886c7131d406d263fb42b01d501}}{{\textbf{{08725}}}} & gtkatakura & 2026-07-6 & \color{green}47 & \color{red}16 \\ \hline
+\href{{https://github.com/react/react/commit/23def8fd0bd46f8ee56f81190b2bdebe37fd573a}}{{\textbf{{23def}}}} & Ruslan Lesiutin & 2026-07-6 & \color{green}0 & \color{red}0 \\ \hline
+\href{{https://github.com/react/react/commit/5afc23a2b6784d2c085a67f2a3cf9d84e7e6c301}}{{\textbf{{5afc2}}}} & BIKI DAS & 2026-07-6 & \color{green}398 & \color{red}12 \\ \hline
+\href{{https://github.com/react/react/commit/4b5d1c937e365ae4d4c27abd5e26f7467acb4fb0}}{{\textbf{{4b5d1}}}} & Anas Khan & 2026-07-6 & \color{green}39 & \color{red}0 \\ \hline
+\href{{https://github.com/react/react/commit/4f9389423b7319e1f7acc3d158c84a8365462748}}{{\textbf{{4f938}}}} & Anas Khan & 2026-07-6 & \color{green}0 & \color{red}0 \\ \hline
+\href{{https://github.com/react/react/commit/aa43b0fbd85a11014b17bd6678e439674478859f}}{{\textbf{{aa43b}}}} & Anas Khan & 2026-07-6 & \color{green}25 & \color{red}0 \\ \hline
+\href{{https://github.com/react/react/commit/00bacdeb1fccbd492198c83a62f8620104607629}}{{\textbf{{00bac}}}} & Anas Khan & 2026-07-6 & \color{green}15 & \color{red}0 \\ \hline
+\href{{https://github.com/react/react/commit/e71a6393e66b0d2add46ba2b2c5db563a0563828}}{{\textbf{{e71a6}}}} & udit & 2026-07-2 & \color{green}83 & \color{red}105 \\ \hline
+\href{{https://github.com/react/react/commit/3508aee63d59b7d4eb8e82171b78ef214a2487ca}}{{\textbf{{3508a}}}} & Ruslan Lesiutin & 2026-07-2 & \color{green}323 & \color{red}20 \\ \hline
+\href{{https://github.com/react/react/commit/7ce677d40659f0fefd8ce122480716d0c8e926b4}}{{\textbf{{7ce67}}}} & Sebastian "Sebbie" Silbermann & 2026-07-2 & \color{green}15 & \color{red}8 \\ \hline
+\href{{https://github.com/react/react/commit/6ca51ab1bd0d726eb4beb8a32f7ad162109710ed}}{{\textbf{{6ca51}}}} & Ruslan Lesiutin & 2026-07-2 & \color{green}215 & \color{red}16 \\ \hline
+\href{{https://github.com/react/react/commit/7a7e893c50c435cca51f40842b3fe5a5c48c09b3}}{{\textbf{{7a7e8}}}} & Michael Vitousek & 2026-07-1 & \color{green}22 & \color{red}3 \\ \hline
+\href{{https://github.com/react/react/commit/ec0fca31f419e821018fc67bc88f2ce62ffb2050}}{{\textbf{{ec0fc}}}} & Jack Pope & 2026-07-1 & \color{green}1501 & \color{red}0 \\ \hline
+\href{{https://github.com/react/react/commit/7df975a0c56de0e9d0d6d9c36a000185db58fc00}}{{\textbf{{7df97}}}} & Ruslan Lesiutin & 2026-07-1 & \color{green}1197 & \color{red}3 \\ \hline
+
+        \end{tabular}
+        \end{table}
+        
+
+        \end{document}
+        
