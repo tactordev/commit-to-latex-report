@@ -31,14 +31,14 @@ def Main():
         path = args.path
 
     print("Running git log command...")
-    out = subprocess.check_output(["git", "log", "--stat", "--after=\"2026-07-01\""], cwd=path)
+    out = subprocess.check_output(["git", "log", "--stat", "--after=\"2026-01-01\""], cwd=path)
 
 
     with open("out.tex", "w") as f:
         f.write(report(out))
 
     subprocess.run([
-        "pdflatex",
+        "xelatex",
         "-interaction=nonstopmode",
         "-halt-on-error",
         "out.tex",
@@ -103,6 +103,17 @@ def parseLog(out):
 
         rows += f"\\href[[{origin[:-4] if ".git" in origin else origin}/commits/{hash.split("commit ")[1] if "commit" in hash else hash}]][[\\textbf[[{hash.split("commit ")[1][:5] if "commit" in hash else hash[:5]}]]]] & {authorName} & {date} & \\color[green]{insertions} & \\color[red]{deletions} \\\\ \\hline\n"
     return rows
+
+# error catching
+# add tags / releases
+# title and description
+# make it look more professional - cls file w presaved commands / class that makes one
+# summary of no. commits, no. ppl working on project
+# general summary page
+# tracking branch names
+# markers
+# filters on the cli
+# check for title tags e.g. [Fix], [Feat]... + add symbol to column of table
 
 def report(out):
     doc = Document()
