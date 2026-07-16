@@ -31,7 +31,9 @@ def Main():
         path = args.path
 
     print("Running git log command...")
-    out = subprocess.check_output(["git", "log", "--stat", "--after=\"2026-01-01\""], cwd=path)
+    out = subprocess.check_output(["git", "log", "--stat",
+        "--date=iso-strict",
+        "--pretty=format:@@COMMIT@@%n%H%n%an%n%ae%n%ad",], cwd=path)
 
 
     with open("out.tex", "w") as f:
@@ -56,67 +58,64 @@ def Main():
     return
 
 
-def parseLog(out):
+def parseLog(raw: bytes):
     global path
-    rows = ""
+    raw = raw.decode("utf-8")
     
     print("Getting origin URL...")
     origin = subprocess.check_output(["git", "remote", "get-url", "origin"], cwd=path).decode("utf-8").strip()
 
 
     print("Parsing git log output...")
-    for log in re.split(r"\n\ncommit ", out.decode("utf-8")):
-        if log.strip() == "":
+
+    commits = []
+
+    for chunk in re.compile(r"^@@COMMIT@@$", re.MULTILINE).split(raw):
+        chunk = chunk.strip("\n")
+        if not chunk.strip():
             continue
-            
-        hash = log.splitlines()[0]
-        
-        fullAuthor = log.splitlines()[1].split(": ")[1]
-        authorName = fullAuthor.split("<")[0].strip()
-        authorEmail = fullAuthor.split("<")[1].split(">")[0].strip()
-        
-        authorLocalisedDate = log.splitlines()[2].split(": ")[1]
-        offsetHrs = int(authorLocalisedDate.split(" +")[1][:3]) if "+" in authorLocalisedDate else -int(authorLocalisedDate.split(" -")[1][:2])
-        offsetMins = int(authorLocalisedDate.split(" +")[1][3:]) if "+" in authorLocalisedDate else -int(authorLocalisedDate.split(" -")[1][3:])
 
-        currentHrs = authorLocalisedDate.split(":")[0].split(" ")[-1]
-        currentMins = authorLocalisedDate.split(":")[1].split(":")[0]
+        lines = chunk.split("\n")
+        hash = lines[0].strip() if len(lines) > 0 else None
+        author_name = lines[1].strip() if len(lines) > 1 else None
+        author_email = lines[2].strip() if len(lines) > 2 else None
+        date = lines[3].strip() if len(lines) > 3 else None
 
-
-        updHrs = int(currentHrs) - offsetHrs
-        updMins = int(currentMins) - offsetMins
-
-        monthToNum = { "Jan": "01", "Feb": "02", "Mar": "03", "Apr": "04", "May": "05", "Jun": "06",
-                        "Jul": "07", "Aug": "08", "Sep": "09", "Oct": "10", "Nov": "11", "Dec": "12" }
-        date = f"{authorLocalisedDate.split(":")[2].split(" ")[1].split(" ")[0]}-{monthToNum[re.split(r"[\s]", authorLocalisedDate)[3]]}-{re.split(r"[\s]", authorLocalisedDate)[4]}"
-
-        insertions = log.split(" insertions")[0].split("changed, ")[1] if "insertions" in log else "0"
-        
-        if "deletions" in log:
-            if "insertions" in log:
-                deletions = log.split(" deletions(-)")[0].split("insertions(+), ")[1]
-            else:
-                deletions = log.split("changed, ")[1].split(" deletions(-)")[0]
-        else:
-            deletions = "0"
+        stats = re.compile(
+            r"^\s*\d+ files? changed"
+            r"(?:, (?P<insertions>\d+) insertions?\(\+\))?"
+            r"(?:, (?P<deletions>\d+) deletions?\(-\))?\s*$",
+            re.MULTILINE
+        ).search(chunk)
         
 
-        rows += f"\\href[[{origin[:-4] if ".git" in origin else origin}/commits/{hash.split("commit ")[1] if "commit" in hash else hash}]][[\\textbf[[{hash.split("commit ")[1][:5] if "commit" in hash else hash[:5]}]]]] & {authorName} & {date} & \\color[green]{insertions} & \\color[red]{deletions} \\\\ \\hline\n"
-    return rows
+        commits.append({
+            "origin": origin if origin is not None else "main/",
+            "hash": hash,
+            "author_name": author_name,
+            "author_email": author_email,
+            "date": date,
+            "insertions": int(stats.group("insertions")) if stats and stats.group("insertions") else 0,
+            "deletions": int(stats.group("deletions")) if stats and stats.group("deletions") else 0
+        })
 
-# error catching
+    return commits
+
+
+def report(out):
+    doc = Document()
+    commits = parseLog(out)
+
+    texFormat = ""
+    for commit in commits:
+        texFormat += f"\\href[[{commit["origin"][:-4] if ".git" in commit["origin"] else commit["origin"]}/commits/{commit["hash"]}]][[\\textbf[[{commit["hash"]}]]]] & {commit["author_name"]} & {commit["date"]} & \\color[green]{commit["insertions"]} & \\color[red]{commit["deletions"]} \\\\ \\hline\n"
+    doc.add("table", texFormat)
+    return doc.render()
+
+
 # add tags / releases
 # title and description
-# make it look more professional - cls file w presaved commands / class that makes one
-# summary of no. commits, no. ppl working on project
-# general summary page
 # tracking branch names
 # markers
 # filters on the cli
 # check for title tags e.g. [Fix], [Feat]... + add symbol to column of table
-
-def report(out):
-    doc = Document()
-    doc.add("table", parseLog(out))
-    return doc.render()
-
