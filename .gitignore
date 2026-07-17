@@ -190,5 +190,4 @@ cython_debug/
 *temp
 *.aux
 *.out
-*.txt
 *out*

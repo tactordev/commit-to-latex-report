@@ -1,0 +1,46 @@
+\documentclass[11pt,a4paper]{report_format}
+
+
+
+
+\begin{document}
+
+\thispagestyle{empty} 
+\begin{center}
+    \vspace*{6cm}
+    {\fontsize{38}{44}\selectfont \bfseries \color{purp} PROJECT} \\[0.2cm]
+    {\fontsize{38}{44}\selectfont \bfseries \color{purp} REPORT} \\[0.6cm]
+    {\fontsize{18}{22}\selectfont \bfseries \today}
+\end{center}
+\clearpage
+
+\section*{{\fontsize{32}{36}\selectfont \bfseries \color{purp} SUMMARY}}
+\vspace{-0.3cm}
+{\large \bfseries [summary-info]}
+
+
+\subsection*{{\fontsize{20}{24}\selectfont \color{black} New Releases}}
+\vspace{-0.2cm}
+
+[new-releases]
+
+
+\subsection*{{\fontsize{20}{24}\selectfont \color{black} Recent Commits}}
+\vspace{-0.2cm}
+
+[recent-commits]
+
+\clearpage
+
+
+ 
+ 
+\section*{{\fontsize{32}{36}\selectfont \bfseries \color{purp} DETAILS}}
+\vspace{-0.3cm}
+{\large \bfseries Commits on this page: 7023f2b, 9e8d7c6, f4e3d2c}
+
+
+[details]
+
+
+\end{document}
