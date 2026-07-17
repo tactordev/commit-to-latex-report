@@ -1,0 +1,15 @@
+\small [[ count ]] recent commit[[ 's' if count != 1 else '' ]]
+\noindent
+\begin{table}[h]
+\centering
+\begin{tabularx}{\textwidth}{llllc}
+\textbf{id} & \textbf{Title} & \textbf{Author} & \textbf{Date} & \textbf{changes} \\ \midrule
+[% for commit in rows %]
+[[ commit.commit_hash | latex ]] & [[ commit.title | latex ]] & [[ commit.author | latex ]] & [[ commit.date | latex ]] & \textcolor{insertion}{+[[ commit.insertions ]]} \textcolor{deletion}{-[[ commit.deletions ]]} \\ \hline
+[% endfor %]
+\bottomrule
+\end{tabularx}
+\end{table}
+[% if remaining_rows > 0 %]
+[[ '\\textit' ]]{ [[ remaining_rows ]] commit[[ 's' if remaining_rows != 1 else '' ]] not shown }
+[% endif %]

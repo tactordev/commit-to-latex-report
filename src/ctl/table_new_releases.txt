@@ -1,0 +1,14 @@
+[% if count %]
+\small [[ count ]] new release[[ 's' if count != 1 else '' ]].
+[% endif %]
+\noindent
+\begin{table}[h]
+\centering
+\begin{tabularx}{\textwidth}{lllllc}
+\textbf{Commit} & \textbf{Tag} & \textbf{Title} & \textbf{Author} & \textbf{Date} & \textbf{Verified} \\ \midrule
+[% for commit in rows %]
+[[ commit.commit_hash | latex ]] & [[ commit.tag_name | latex ]] & [[ commit.title | latex ]] & [[ commit.author | latex ]] & [[ commit.date | latex ]] & [% if commit.verified %]\checkmark[% else %]\xmark[% endif %] \\ \hline
+[% endfor %]
+\bottomrule
+\end{tabularx}
+\end{table}

@@ -1,4 +1,42 @@
+from pathlib import Path
+
+from jinja2 import Environment, FileSystemLoader
+
+
 MAX_ROWS_ON_PAGE = 25
+TEMPLATE_DIR = Path(__file__).resolve().parent
+
+
+def escape_latex(value):
+    if value is None:
+        return ""
+
+    value = str(value)
+    return (
+        value.replace("\\", r"\textbackslash{}")
+        .replace("&", r"\&")
+        .replace("_", r"\_")
+        .replace("%", r"\%")
+        .replace("#", r"\#")
+    )
+
+
+class TemplateRenderer:
+    def __init__(self):
+        self.environment = Environment(
+            loader=FileSystemLoader(TEMPLATE_DIR),
+            variable_start_string="[[",
+            variable_end_string="]]",
+            block_start_string="[%",
+            block_end_string="%]",
+            trim_blocks=True,
+            lstrip_blocks=True,
+        )
+        self.environment.filters["latex"] = escape_latex
+
+    def render(self, template_name: str, **context):
+        template = self.environment.get_template(template_name)
+        return template.render(**context)
 
 
 class Document:
@@ -6,27 +44,18 @@ class Document:
         self.contents = []
         self.definitions = []
         self.packages = ["hyperref", "xcolor", "tabularx", "booktabs"]
+        self.renderer = TemplateRenderer()
 
     def add(self, type, content, table_type: str | None = None):
         match type:
             case "table":
-                self.contents.append(
-                    Table(self, content, table_type)
-                )
+                self.contents.append(Table(self, content, table_type))
                 return
-
             case _:
                 raise ValueError(f"Unknown type: {type}")
 
-
-    def render(self):
-        base = ""
-        with open("src/ctl/report_format.txt", "r") as f:
-            base = f.readlines()
-
-        base = "".join(base)
-
-        return base
+    def render(self, **context):
+        return self.renderer.render("report_format.txt", **context)
 
 
 class Table:
@@ -36,113 +65,85 @@ class Table:
         self.type = type
 
     def render(self):
-        def clean(val):
-            if val is None:
-                return ""
-            val = str(val)
-            return val.replace("&", "\\&").replace("_", "\\_").replace("%", "\\%").replace("#", "\\#")
-
-        match (self.type):
+        match self.type:
             case "New Releases":
                 rows = []
                 for commit in self.content.values():
-                    commit_hash = clean(commit['hash'][:7])
-                    tag_name = clean(commit.get('tag') or '')
-                    title = clean(commit['title'])
-                    if len(title) > 20:
-                        title = f"{title[:20]}..."
-                    author = clean(commit['author_name'])
-                    date = clean(commit['date'])
-                    verified = '\\checkmark' if commit.get('verified') else '\\xmark'
-                    rows.append(f"{commit_hash} & {tag_name} & {title} & {author} & {date} & {verified} \\\\ \\hline\n")
+                    rows.append(
+                        {
+                            "commit_hash": commit["hash"][:7],
+                            "tag_name": commit.get("tag") or "",
+                            "title": commit["title"],
+                            "author": commit["author_name"],
+                            "date": commit["date"],
+                            "verified": bool(commit.get("verified")),
+                        }
+                    )
 
-                template = f"""#[\\small {len(self.content.keys())} new release{"s" if len(self.content.keys()) != 1 else ""}.]#
-\\noindent
-\\begin#[table]#-(h)-
-\\centering
-\\begin#[tabularx]##[\\textwidth]##[lllllc]#
-\\textbf#[Commit]# & \\textbf#[Tag]# & \\textbf#[Title]# & \\textbf#[Author]# & \\textbf#[Date]# & \\textbf#[Verified]# \\\\ \\midrule
-""" + "".join(rows) + """\\bottomrule
-\\end#[tabularx]#
-\\end#[table]#"""
-                return template.replace("#[", "{").replace("]#", "}").replace("-(", "[").replace(")-", "]")
+                return self.document.renderer.render(
+                    "table_new_releases.txt",
+                    count=len(self.content),
+                    rows=rows,
+                )
 
             case "Recent Commits":
                 num_rows_before = 2
                 for content in self.document.contents:
-                    if isinstance(content, Table) and (content.type == "Recent Commits" or content.type == "Details"):
+                    if isinstance(content, Table) and content.type in ("Recent Commits", "Details"):
                         break
                     num_rows_before += len(content.content)
 
                 rows_to_show = MAX_ROWS_ON_PAGE - num_rows_before
-                remaining_rows = len(self.content.keys()) - rows_to_show
-
+                remaining_rows = len(self.content) - rows_to_show
                 rows = []
-                for commit in list(self.content.values())[:rows_to_show]:
-                    commit_hash = clean(commit['hash'][:7])
-                    title = clean(commit['title'])
-                    if len(title) > 20:
-                        title = f"{title[:20]}..."
-                    author = clean(commit['author_name'])
-                    date = clean(commit['date'])
-                    insertions = commit.get('insertions', 0)
-                    deletions = commit.get('deletions', 0)
-                    rows.append(f"{commit_hash} & {title} & {author} & {date} & \\textcolor#[insertion]##[+{insertions}]# \\textcolor#[deletion]##[-{deletions}]# \\\\ \\hline\n")
 
-                template = f"""\n\n\n#[\\small {len(self.content.keys())} recent commit{"s" if len(self.content.keys()) != 1 else ""}]#
-\\noindent
-\\begin#[table]#-(h)-
-\\centering
-\\begin#[tabularx]##[\\textwidth]##[llllc]#
-\\textbf#[id]# & \\textbf#[Title]# & \\textbf#[Author]# & \\textbf#[Date]# & \\textbf#[changes]# \\\\ \\midrule
-{"".join(rows)}\\bottomrule
-\\end#[tabularx]#
-\\end#[table]#
-"""
-                rendered = template.replace("#[", "{").replace("]#", "}").replace("-(", "[").replace(")-", "]")
-                if remaining_rows > 0:
-                    rendered += f"\\textit#[{remaining_rows} commit{'s' if remaining_rows != 1 else ''} not shown]#\n".replace("#[", "{").replace("]#", "}")
-                return rendered
+                for commit in list(self.content.values())[:rows_to_show]:
+                    rows.append(
+                        {
+                            "commit_hash": commit["hash"][:7],
+                            "title": commit["title"][:20] if len(commit["title"]) > 20 else commit["title"],
+                            "author": commit["author_name"],
+                            "date": commit["date"],
+                            "insertions": commit.get("insertions", 0),
+                            "deletions": commit.get("deletions", 0),
+                        }
+                    )
+
+                return self.document.renderer.render(
+                    "table_recent_commits.txt",
+                    count=len(self.content),
+                    rows=rows,
+                    remaining_rows=remaining_rows,
+                )
 
             case "Details":
-                rendered = ""
-                lastCleared = 0
+                rows = []
                 for commit in self.content.values():
-                    commit_hash = clean(commit['hash'])
-                    title = clean(commit['title'])
-                    lines_changed = clean(commit.get('lines_changed', 0))
-                    branch = clean(commit.get('branch') or 'N/A')
-                    parent_id = clean(commit.get('parent_id') or 'N/A')
-                    author = clean(commit['author_name'])
-                    insertions = clean(commit.get('insertions', 0))
-                    deletions = clean(commit.get('deletions', 0))
-                    description = commit.get('description', '')
-
+                    description = commit.get("description", "")
                     split_description = ""
                     for count, char in enumerate(description):
                         split_description += char
                         if count % 80 == 0 and count != 0:
                             split_description += "\n"
-                    rendered += f"""
-\\begin#[table]#-(h)-
-\\centering
-\\begin#[tabularx]##[\\textwidth]##[|l|l|l|l|l|l|l|l|l|l|]#
-\\hline
-\\multicolumn#[10]##[|l|]##[{commit['title']}]# \\\\
-\\hline \\multicolumn#[6]##[|l|]##[{commit['hash']} \hspace#[3.75cm]# ]# & \\multicolumn#[4]##[c|]##[0 lines changed]# \\\\
-\\hline \\multicolumn#[2]##[|l|]##[{commit['branch']}]# \hfill & \\multicolumn#[2]##[|l|]##[{commit['parent_id'][:40] if commit['parent_id'] and len(commit['parent_id']) > 40 else commit['parent_id'] or 'N/A'}]# & \\multicolumn#[2]##[|l|]##[{commit['author_name']}]# & \\multicolumn#[2]##[|c|]##[\\textcolor#[insertion]##[+{insertions}]#]# & \\multicolumn#[2]##[|c|]##[\\textcolor#[deletion]##[-{deletions}]#]# \\\\
-\\hline \\multicolumn#[10]##[|l|]##[{description}]# \\\\
-\\hline
-\\end#[tabularx]#
 
-\\end#[table]#
-""".replace("#[", "{").replace("]#", "}").replace("-(", "[").replace(")-", "]")
-                    if lastCleared > 6:
-                        rendered += "\\clearpage\n"
-                        lastCleared = 0
-                    else:
-                        lastCleared += 1
-                return rendered
+                    rows.append(
+                        {
+                            "title": commit["title"],
+                            "hash": commit["hash"],
+                            "branch": commit.get("branch") or "N/A",
+                            "parent_id": commit.get("parent_id") or "N/A",
+                            "author_name": commit["author_name"],
+                            "insertions": commit.get("insertions", 0),
+                            "deletions": commit.get("deletions", 0),
+                            "description": split_description or description,
+                        }
+                    )
 
-            case _: 
+                return self.document.renderer.render(
+                    "table_details.txt",
+                    rows=rows,
+                    clearpage_after=7,
+                )
+
+            case _:
                 raise ValueError(f"Unknown table type: {self.type}")

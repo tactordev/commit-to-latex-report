@@ -1,0 +1,17 @@
+[% for commit in rows %]
+\begin{table}[h]
+\centering
+\begin{tabularx}{\textwidth}{|l|l|l|l|l|l|l|l|l|l|}
+\hline
+\multicolumn{10}{|l|}{ [[ commit.title | latex ]] } \\
+\hline \multicolumn{6}{|l|}{ [[ commit.hash | latex ]] \hspace{3.75cm} } & \multicolumn{4}{c|}{0 lines changed} \\
+\hline \multicolumn{2}{|l|}{ [[ commit.branch | latex ]] } \hfill & \multicolumn{2}{|l|}{ [[ commit.parent_id | latex ]] } & \multicolumn{2}{|l|}{ [[ commit.author_name | latex ]] } & \multicolumn{2}{|c|}{\textcolor{insertion}{+[[ commit.insertions ]]} } & \multicolumn{2}{|c|}{\textcolor{deletion}{-[[ commit.deletions ]]} } \\
+\hline \multicolumn{10}{|l|}{ [[ commit.description | latex ]] } \\
+\hline
+\end{tabularx}
+
+\end{table}
+[% if not loop.last and loop.index is divisibleby clearpage_after %]
+\clearpage
+[% endif %]
+[% endfor %]

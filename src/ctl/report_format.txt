@@ -16,19 +16,19 @@
 
 \section*{{\fontsize{32}{36}\selectfont \bfseries \color{purp} SUMMARY}}
 \vspace{-0.3cm}
-{\large \bfseries [summary-info]}
+{\large \bfseries [[ summary_info ]]}
 
 
 \subsection*{{\fontsize{20}{24}\selectfont \color{black} New Releases}}
 \vspace{-0.2cm}
 
-[new-releases]
+[[ new_releases ]]
 
 
 \subsection*{{\fontsize{20}{24}\selectfont \color{black} Recent Commits}}
 \vspace{-0.2cm}
 
-[recent-commits]
+[[ recent_commits ]]
 
 \clearpage
 
@@ -40,7 +40,7 @@
 {\large \bfseries Commits on this page: 7023f2b, 9e8d7c6, f4e3d2c}
 
 
-[details]
+[[ details ]]
 
 
 \end{document}

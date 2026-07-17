@@ -42,11 +42,12 @@ def Main():
     doc.add("table", commits['releases'], "New Releases")
     doc.add("table", commits['commits'], "Recent Commits")
     doc.add("table", commits['commits'], "Details")
-    rendered = doc.render()
-    rendered = rendered.replace("[summary-info]", f"{len(commits['commits'])} commits, {len(set(commit['author_email'] for commit in commits['commits'].values()))} collaborator(s)")
-    rendered = rendered.replace("[new-releases]", doc.contents[0].render())
-    rendered = rendered.replace("[recent-commits]", doc.contents[1].render())
-    rendered = rendered.replace("[details]", doc.contents[2].render())
+    rendered = doc.render(
+        summary_info=f"{len(commits['commits'])} commits, {len(set(commit['author_email'] for commit in commits['commits'].values()))} collaborator(s)",
+        new_releases=doc.contents[0].render(),
+        recent_commits=doc.contents[1].render(),
+        details=doc.contents[2].render(),
+    )
 
 
     with open("src/ctl/out.tex", "w") as f:
@@ -112,8 +113,13 @@ def parseLog(raw: bytes):
         description_lines = []
         in_description = False
         
+        file_stat_re = re.compile(r"\|\s+\d+\s*[+-]*")
+
         for line in lines[5:]:
             cleaned = line.strip()
+
+            if stat_re.match(line) or file_stat_re.search(line):
+                break
 
             if stat_re.match(line):
                 break
@@ -155,7 +161,7 @@ def parseLog(raw: bytes):
             "deletions": int(stats.group("deletions")) if stats and stats.group("deletions") else 0,
             "branch": branch,
             "parent_id": parent,
-            "description": description
+            "description": description if description.strip() != "" else "N/A"
         }
 
         if "tag:" in chunk:
