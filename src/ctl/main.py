@@ -1,5 +1,5 @@
-import os, shutil, re, os, subprocess, argparse, tempfile
-from .latex import Document, Table
+import os, shutil, re, os, subprocess, argparse, tempfile, datetime, time
+from .latex import Document
 
 
 import stat
@@ -31,22 +31,34 @@ def Main():
         path = args.path
 
     print("Running git log command...")
-    out = subprocess.check_output(["git", "log", "--stat",
-        "--date=iso-strict",
-        "--pretty=format:@@COMMIT@@%n%H%n%an%n%ae%n%ad",], cwd=path)
+    out = subprocess.check_output([
+        "git", "log", "--all", "--stat", "--source", "--date=iso-strict", 
+        "--pretty=format:@@COMMIT@@%n%H%n%s%n%an%n%ae%n%ad%n%S%nParents: %P%nDescription: %b"
+    ], cwd=path)
 
 
-    with open("out.tex", "w") as f:
-        f.write(report(out))
+    doc = Document()
+    commits = parseLog(out)
+    doc.add("table", commits['releases'], "New Releases")
+    doc.add("table", commits['commits'], "Recent Commits")
+    doc.add("table", commits['commits'], "Details")
+    rendered = doc.render()
+    rendered = rendered.replace("[summary-info]", f"{len(commits['commits'])} commits, {len(set(commit['author_email'] for commit in commits['commits'].values()))} collaborator(s)")
+    rendered = rendered.replace("[new-releases]", doc.contents[0].render())
+    rendered = rendered.replace("[recent-commits]", doc.contents[1].render())
+    rendered = rendered.replace("[details]", doc.contents[2].render())
+
+
+    with open("src/ctl/out.tex", "w") as f:
+        f.write(rendered)
 
     subprocess.run([
         "xelatex",
         "-interaction=nonstopmode",
-        "-halt-on-error",
         "out.tex",
-    ], check=True)
+    ], check=True, cwd="src/ctl")
 
-    if not os.path.exists("out.pdf"):
+    if not os.path.exists("src/ctl/out.pdf"):
         return print("PDF file not generated.")
 
     print("Cleaning up temporary files...")
@@ -54,65 +66,111 @@ def Main():
     if temp_dir is not None:
         shutil.rmtree(temp_dir, ignore_errors=True)
 
-    print("PDF file generated: file:///" + os.path.abspath("out.pdf"), "(CTRL + Click to open).")
+    print("PDF file generated: file:///" + os.path.abspath("src/ctl/out.pdf"), "(CTRL + Click to open).")
     return
 
 
 def parseLog(raw: bytes):
-    global path
     raw = raw.decode("utf-8")
-    
-    print("Getting origin URL...")
-    origin = subprocess.check_output(["git", "remote", "get-url", "origin"], cwd=path).decode("utf-8").strip()
 
 
     print("Parsing git log output...")
 
-    commits = []
+    commits = {}
+    releases = {}
+
+    stat_re = re.compile(
+        r"^\s*\d+ files? changed"
+        r"(?:, (?P<insertions>\d+) insertions?\(\+\))?"
+        r"(?:, (?P<deletions>\d+) deletions?\(-\))?\s*$",
+        re.MULTILINE
+    )   
 
     for chunk in re.compile(r"^@@COMMIT@@$", re.MULTILINE).split(raw):
         chunk = chunk.strip("\n")
         if not chunk.strip():
             continue
 
-        lines = chunk.split("\n")
-        hash = lines[0].strip() if len(lines) > 0 else None
-        author_name = lines[1].strip() if len(lines) > 1 else None
-        author_email = lines[2].strip() if len(lines) > 2 else None
-        date = lines[3].strip() if len(lines) > 3 else None
+        stats_match = stat_re.search(chunk)
+        if stats_match:
+            metadata_part = chunk[:stats_match.start()]
+        else:
+            metadata_part = chunk
 
-        stats = re.compile(
-            r"^\s*\d+ files? changed"
-            r"(?:, (?P<insertions>\d+) insertions?\(\+\))?"
-            r"(?:, (?P<deletions>\d+) deletions?\(-\))?\s*$",
-            re.MULTILINE
-        ).search(chunk)
+        lines = metadata_part.strip().split("\n")
+
+
+        hash = lines[0].strip() if len(lines) > 0 else None
+        title = lines[1].strip() if len(lines) > 1 else None
+        author_name = lines[2].strip() if len(lines) > 2 else None
+        author_email = lines[3].strip() if len(lines) > 3 else None
+        _date = lines[4].strip() if len(lines) > 4 else None
+        
+        
+        branch = None
+        parent = None
+        description_lines = []
+        in_description = False
+        
+        for line in lines[5:]:
+            cleaned = line.strip()
+
+            if stat_re.match(line):
+                break
+
+
+            if cleaned.startswith("Parents:"):
+                parts = cleaned.split("Parents:")
+                if len(parts) > 1 and parts[1].strip():
+                    parent = parts[1].strip()
+            elif "refs/" in cleaned:
+                branch = cleaned.split("refs/")[1].replace("heads/", "")
+            elif line.startswith("Description:"):
+                in_description = True
+                desc_start = line.split("Description:", 1)[1].split("\n")[0]
+                if desc_start.strip():
+                    description_lines.append(desc_start)
+            elif in_description:
+                description_lines.append(line)
+
+        description = "\n".join(description_lines).strip()
+        if description:
+            description = (description
+                           .replace("&", "\\&")
+                           .replace("_", "\\_")
+                           .replace("%", "\\%")
+                           .replace("#", "\\#"))
+            description = description.replace("\n", " \\\\ ")
+        stats = stats_match
         
 
-        commits.append({
-            "origin": origin if origin is not None else "main/",
+        commits[hash] = {
             "hash": hash,
+            "title": title.replace("&", "\\&") if title else None,
             "author_name": author_name,
             "author_email": author_email,
-            "date": date,
+            "date": f"{datetime.datetime.fromisoformat(_date).date()} {datetime.datetime.fromisoformat(_date).time()}" if _date else None,
+            "lines_changed": (int(stats.group("insertions")) if stats and stats.group("insertions") else 0) + (int(stats.group("deletions")) if stats and stats.group("deletions") else 0),
             "insertions": int(stats.group("insertions")) if stats and stats.group("insertions") else 0,
-            "deletions": int(stats.group("deletions")) if stats and stats.group("deletions") else 0
-        })
+            "deletions": int(stats.group("deletions")) if stats and stats.group("deletions") else 0,
+            "branch": branch,
+            "parent_id": parent,
+            "description": description
+        }
 
-    return commits
+        if "tag:" in chunk:
+            tag_match = re.compile(r"tag:\s*([^,)]+)").search(chunk)
+            tag_name = tag_match.group(1) if tag_match else None
+            releases[tag_name] = {
+                "hash": hash,
+                "tag": tag_name,
+                "title": title,
+                "author_name": author_name,
+                "author_email": author_email,
+                "date": f"{datetime.datetime.fromisoformat(_date).date()} {datetime.datetime.fromisoformat(_date).time()}" if _date else None
+            }
 
-
-def report(out):
-    doc = Document()
-    commits = parseLog(out)
-
-    texFormat = ""
-    for commit in commits:
-        texFormat += f"\\href[[{commit["origin"][:-4] if ".git" in commit["origin"] else commit["origin"]}/commits/{commit["hash"]}]][[\\textbf[[{commit["hash"]}]]]] & {commit["author_name"]} & {commit["date"]} & \\color[green]{commit["insertions"]} & \\color[red]{commit["deletions"]} \\\\ \\hline\n"
-    doc.add("table", texFormat)
-    return doc.render()
-
-
+    return { 'commits': commits, 'releases': releases}
 # add tags / releases
 # title and description
 # tracking branch names
