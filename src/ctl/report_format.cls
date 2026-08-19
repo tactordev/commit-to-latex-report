@@ -8,7 +8,7 @@
 \RequirePackage{tcolorbox}
 \RequirePackage{fancyhdr}
 \RequirePackage{amssymb}
-\RequirePackage{hyperref}
+\RequirePackage[hidelinks]{hyperref}
 \RequirePackage{tabularx, booktabs}
 \RequirePackage{lmodern}
 \RequirePackage{array}

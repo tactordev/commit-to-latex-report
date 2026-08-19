@@ -1,6 +1,6 @@
 \small [[ count ]] recent commit[[ 's' if count != 1 else '' ]]
 \noindent
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \begin{tabularx}{\textwidth}{llllc}
 \textbf{id} & \textbf{Title} & \textbf{Author} & \textbf{Date} & \textbf{changes} \\ \midrule
