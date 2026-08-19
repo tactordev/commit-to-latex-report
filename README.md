@@ -1,6 +1,8 @@
 ## Commit to Latex Report
 This is a project where I was tasked with creating a professional document for summarising the progress of a team. It should be presentable to a client and show the progress a team has completed over a specified timeframe.
 
+<img width="1856" height="898" alt="image" src="https://github.com/user-attachments/assets/0ffe6587-2a0d-460d-9268-362daf11eaea" />
+
 
 ### Using the tool
 **Prerequisites:** [UV](https://docs.astral.sh/uv/getting-started/installation/) and a [Tex distribution e.g. MikTex](https://miktex.org/download).
