@@ -10,10 +10,11 @@ def readonly_to_writable(foo, file, err):
     foo(file)
 
 
-
 def Main():
     global path
     temp_dir = None
+
+    url = ""
 
     parser = argparse.ArgumentParser()
     parser.add_argument("path", help="Path to the git repository", nargs="?")
@@ -25,20 +26,21 @@ def Main():
         path = os.path.join(temp_dir, "repo")
 
         print("Cloning repository...")
-        subprocess.run(["git", "clone", args.url.strip(), "repo"], check=True, cwd=temp_dir)
+        url = args.url.strip()
+        subprocess.run(["git", "clone", "--tags", args.url.strip(), "repo"], check=True, cwd=temp_dir)
 
     else:
-        path = args.path
+        return print("No url provided in --url=https://github.com/author/repository.")
 
     print("Running git log command...")
     out = subprocess.check_output([
         "git", "log", "--all", "--stat", "--source", "--date=iso-strict", 
-        "--pretty=format:@@COMMIT@@%n%H%n%s%n%an%n%ae%n%ad%n%S%nParents: %P%nDescription: %b"
+        "--pretty=format:COMMIT_START%nhash:%H%nauthor:%an%ndate:%ai%nparents:%P%nrefs:%D%nsubject:%s%nbody:%b%nCOMMIT_END"
     ], cwd=path)
 
 
     doc = Document()
-    commits = parseLog(out)
+    commits = parseLog(out, url)
     doc.add("table", commits['releases'], "New Releases")
     doc.add("table", commits['commits'], "Recent Commits")
     doc.add("table", commits['commits'], "Details")
@@ -71,7 +73,7 @@ def Main():
     return
 
 
-def parseLog(raw: bytes):
+def parseLog(raw: bytes, url: str):
     raw = raw.decode("utf-8")
 
 
@@ -87,59 +89,91 @@ def parseLog(raw: bytes):
         re.MULTILINE
     )   
 
-    for chunk in re.compile(r"^@@COMMIT@@$", re.MULTILINE).split(raw):
-        chunk = chunk.strip("\n")
-        if not chunk.strip():
+    for chunk in raw.split("COMMIT_START\n"):
+        chunk = chunk.strip()
+        if not chunk:
             continue
 
-        stats_match = stat_re.search(chunk)
-        if stats_match:
-            metadata_part = chunk[:stats_match.start()]
+        if "COMMIT_END" in chunk:
+            metadata = chunk.split("COMMIT_END")[0]
         else:
-            metadata_part = chunk
+            metadata = chunk
 
-        lines = metadata_part.strip().split("\n")
+        stats_match = stat_re.search(chunk)
+        insertions = int(stats_match.group("insertions")) if stats_match and stats_match.group("insertions") else 0
+        deletions = int(stats_match.group("deletions")) if stats_match and stats_match.group("deletions") else 0
+
+        fields = {
+            "hash": None,
+            "author": None,
+            "date": None,
+            "parents": None,
+            "refs": None,
+            "subject": None,
+            "body": ""
+        }
+
+        body_lines = []
+        in_body = False
 
 
-        hash = lines[0].strip() if len(lines) > 0 else None
-        title = lines[1].strip() if len(lines) > 1 else None
-        author_name = lines[2].strip() if len(lines) > 2 else None
-        author_email = lines[3].strip() if len(lines) > 3 else None
-        _date = lines[4].strip() if len(lines) > 4 else None
-        
-        
+
+        lines = metadata.splitlines()
+
+        for line in lines:
+            if in_body:
+                body_lines.append(line)
+            elif line.startswith("hash:"):
+                fields["hash"] = line[5:].strip()
+            elif line.startswith("author:"):
+                fields["author"] = line[7:].strip()
+            elif line.startswith("date:"):
+                fields["date"] = line[5:].strip()
+            elif line.startswith("parents:"):
+                fields["parents"] = line[8:].strip()
+            elif line.startswith("refs:"):
+                fields["refs"] = line[5:].strip()
+            elif line.startswith("subject:"):
+                fields["subject"] = line[8:].strip()
+            elif line.startswith("body:"):
+                in_body = True
+                first_body_line = line[5:].strip()
+                if first_body_line:
+                    body_lines.append(first_body_line)
+
+        commit_hash = fields["hash"]
+        if not commit_hash:
+            continue
+
+        date_str = fields["date"]
+        formatted_date = None
+        if date_str:
+            try:
+                dt = datetime.datetime.fromisoformat(date_str)
+                formatted_date = f"{dt.date()} {dt.time()}"
+            except ValueError:
+                formatted_date = date_str
+
+        parent_raw = fields["parents"]
+        formatted_parents = None
+        if parent_raw:
+            formatted_parents = " ".join([p[:7] for p in parent_raw.split()])
+
+        refs_str = fields["refs"] or ""
         branch = None
-        parent = None
-        description_lines = []
-        in_description = False
-        
-        file_stat_re = re.compile(r"\|\s+\d+\s*[+-]*")
+        tags = []
 
-        for line in lines[5:]:
-            cleaned = line.strip()
+        if refs_str:
+            for ref in refs_str.split(","):
+                ref = ref.strip()
+                if ref.startswith("tag:"):
+                    tags.append(ref[4:].strip())
+                elif "->" in ref:
+                    branch = ref.split("->")[1].strip()
+                elif ref and not branch and not ref.startswith("origin/"):
+                    branch = ref
 
-            if stat_re.match(line) or file_stat_re.search(line):
-                break
-
-            if stat_re.match(line):
-                break
-
-
-            if cleaned.startswith("Parents:"):
-                parts = cleaned.split("Parents:")
-                if len(parts) > 1 and parts[1].strip():
-                    parent = parts[1].strip()
-            elif "refs/" in cleaned:
-                branch = cleaned.split("refs/")[1].replace("heads/", "")
-            elif line.startswith("Description:"):
-                in_description = True
-                desc_start = line.split("Description:", 1)[1].split("\n")[0]
-                if desc_start.strip():
-                    description_lines.append(desc_start)
-            elif in_description:
-                description_lines.append(line)
-
-        description = "\n".join(description_lines).strip()
+        description = "\n".join(body_lines).strip()
         if description:
             description = (description
                            .replace("&", "\\&")
@@ -147,39 +181,42 @@ def parseLog(raw: bytes):
                            .replace("%", "\\%")
                            .replace("#", "\\#"))
             description = description.replace("\n", " \\\\ ")
-        stats = stats_match
-        
 
-        commits[hash] = {
-            "hash": hash,
-            "title": title.replace("&", "\\&") if title else None,
-            "author_name": author_name,
-            "author_email": author_email,
-            "date": f"{datetime.datetime.fromisoformat(_date).date()} {datetime.datetime.fromisoformat(_date).time()}" if _date else None,
-            "lines_changed": (int(stats.group("insertions")) if stats and stats.group("insertions") else 0) + (int(stats.group("deletions")) if stats and stats.group("deletions") else 0),
-            "insertions": int(stats.group("insertions")) if stats and stats.group("insertions") else 0,
-            "deletions": int(stats.group("deletions")) if stats and stats.group("deletions") else 0,
+        title = fields["subject"]
+        if title:
+            title = (title
+                     .replace("&", "\\&")
+                     .replace("_", "\\_")
+                     .replace("%", "\\%")
+                     .replace("#", "\\#"))
+
+        commits[commit_hash] = {
+            "hash": commit_hash,
+            "title": title,
+            "author_name": fields["author"],
+            "author_email": None,  
+            "date": formatted_date,
+            "lines_changed": insertions + deletions,
+            "insertions": insertions,
+            "deletions": deletions,
             "branch": branch,
-            "parent_id": parent,
-            "description": description if description.strip() != "" else "N/A"
+            "parent_id": formatted_parents if formatted_parents else "N/A",
+            "description": description if description else "N/A",
+            "repo_url": url
         }
 
-        if "tag:" in chunk:
-            tag_match = re.compile(r"tag:\s*([^,)]+)").search(chunk)
-            tag_name = tag_match.group(1) if tag_match else None
+        for tag_name in tags:
             releases[tag_name] = {
-                "hash": hash,
+                "hash": commit_hash[:7],
                 "tag": tag_name,
                 "title": title,
-                "author_name": author_name,
-                "author_email": author_email,
-                "date": f"{datetime.datetime.fromisoformat(_date).date()} {datetime.datetime.fromisoformat(_date).time()}" if _date else None
+                "author_name": fields["author"],
+                "author_email": None,
+                "date": formatted_date,
+                "repo_url": url
             }
 
-    return { 'commits': commits, 'releases': releases}
-# add tags / releases
-# title and description
-# tracking branch names
+    return {'commits': commits, 'releases': releases}
+
 # markers
 # filters on the cli
-# check for title tags e.g. [Fix], [Feat]... + add symbol to column of table

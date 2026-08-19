@@ -57,6 +57,11 @@ class Document:
     def render(self, **context):
         return self.renderer.render("report_format.txt", **context)
 
+def format_parent(parent):
+    if not parent:
+        return "N/A"
+    
+    return " ".join([p[:7] for p in parent.split()])
 
 class Table:
     def __init__(self, document: Document, content: dict, type: str | None = None):
@@ -71,12 +76,14 @@ class Table:
                 for commit in self.content.values():
                     rows.append(
                         {
-                            "commit_hash": commit["hash"][:7],
+                            "hash": commit["hash"],
+                            "short_hash": commit["hash"][:7],
                             "tag_name": commit.get("tag") or "",
                             "title": commit["title"],
                             "author": commit["author_name"],
                             "date": commit["date"],
                             "verified": bool(commit.get("verified")),
+                            "commit_url": f"{commit["repo_url"]}/commit/{commit["hash"]}"
                         }
                     )
 
@@ -119,30 +126,25 @@ class Table:
             case "Details":
                 rows = []
                 for commit in self.content.values():
-                    description = commit.get("description", "")
-                    split_description = ""
-                    for count, char in enumerate(description):
-                        split_description += char
-                        if count % 80 == 0 and count != 0:
-                            split_description += "\n"
-
                     rows.append(
                         {
                             "title": commit["title"],
                             "hash": commit["hash"],
-                            "branch": commit.get("branch") or "N/A",
-                            "parent_id": commit.get("parent_id") or "N/A",
+                            "short_hash": commit["hash"][:7],
+                            "commit_url": f"{commit["repo_url"]}/commit/{commit["hash"]}",
+                            "branch": commit.get("branch") or "main",
+                            "parent_id": format_parent(commit.get("parent_id")),
                             "author_name": commit["author_name"],
                             "insertions": commit.get("insertions", 0),
                             "deletions": commit.get("deletions", 0),
-                            "description": split_description or description,
+                            "description": commit.get("description", "N/A"),
                         }
                     )
 
                 return self.document.renderer.render(
                     "table_details.txt",
                     rows=rows,
-                    clearpage_after=7,
+                    clearpage_after=15,
                 )
 
             case _:
