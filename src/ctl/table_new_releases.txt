@@ -7,7 +7,7 @@
 \begin{tabularx}{\textwidth}{lllllc}
 \textbf{Commit} & \textbf{Tag} & \textbf{Title} & \textbf{Author} & \textbf{Date} & \textbf{Verified} \\ \midrule
 [% for commit in rows %]
-\href{[[ commit.commit_url ]]}{ \color{blue} \underline{[[ commit.short_hash | latex ]]}} & [[ commit.tag_name | latex ]] & [[ commit.title | latex ]] & [[ commit.author | latex ]] & [[ commit.date | latex ]] & [% if commit.verified %]\checkmark[% else %]$\times$[% endif %] \\ \hline
+\href{[[ commit.commit_url ]]}{ \color{blue} \underline{[[ commit.short_hash | latex ]]}} & [[ commit.tag_name | latex ]] & [[ commit.title[:20] | latex ]][%if commit.title|length > 20%]...[% endif %] & [[ commit.author | latex ]] & [[ commit.date | latex ]] & [% if commit.verified %]\checkmark[% else %]$\times$[% endif %] \\ \hline
 [% endfor %]
 \bottomrule
 \end{tabularx}

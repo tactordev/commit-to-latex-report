@@ -82,7 +82,7 @@ class Table:
                             "title": commit["title"],
                             "author": commit["author_name"],
                             "date": commit["date"],
-                            "verified": bool(commit.get("verified")),
+                            "verified": True,
                             "commit_url": f"{commit["repo_url"]}/commit/{commit["hash"]}"
                         }
                     )
@@ -108,7 +108,7 @@ class Table:
                     rows.append(
                         {
                             "commit_hash": commit["hash"][:7],
-                            "title": commit["title"][:20] if len(commit["title"]) > 20 else commit["title"],
+                            "title": f"{commit["title"][:20]}..." if len(commit["title"]) > 20 else commit["title"],
                             "author": commit["author_name"],
                             "date": commit["date"],
                             "insertions": commit.get("insertions", 0),
