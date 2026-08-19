@@ -1,14 +1,15 @@
 import os, shutil, re, os, subprocess, argparse, tempfile, datetime, time
 from .latex import Document
-
-
 import stat
 from pathlib import Path
-def readonly_to_writable(foo, file, err):
-  if Path(file).suffix in ['.idx', '.pack'] and 'PermissionError' == err[0].__name__:
-    os.chmod(file, stat.S_IWRITE)
-    foo(file)
 
+
+def validate_date(date: str):
+    try:
+        dt = datetime.datetime.strptime(date, "%d/%m/%Y")
+        return dt.strftime("%Y-%m-%d")
+    except ValueError:
+        return argparse.ArgumentTypeError("Invalid date format. Expected dd/mm/yyyy.")
 
 def Main():
     global path
@@ -17,8 +18,11 @@ def Main():
     url = ""
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("path", help="Path to the git repository", nargs="?")
-    parser.add_argument("--url", help="URL of the git repository (optional)", default=None)
+    parser.add_argument("--url", help="URL of the git repository (required)", default=None)
+    parser.add_argument("--start", type=validate_date, help="Start date for commits (dd/mm/yyyy)", default=None)
+    parser.add_argument("--end", type=validate_date, help="End date for commits (dd/mm/yyyy)", default=None)
+    parser.add_argument("--count", type=int, help="Number of commits to fetch in total", default=None)
+    
     args = parser.parse_args()
 
     if args.url is not None and args.url.strip() != "":
@@ -32,11 +36,27 @@ def Main():
     else:
         return print("No url provided in --url=https://github.com/author/repository.")
 
-    print("Running git log command...")
-    out = subprocess.check_output([
+        
+    git_cmd = [
         "git", "log", "--all", "--stat", "--source", "--date=iso-strict", 
         "--pretty=format:COMMIT_START%nhash:%H%nauthor:%an%ndate:%ai%nparents:%P%nrefs:%D%nsubject:%s%nbody:%b%nCOMMIT_END"
-    ], cwd=path)
+    ]
+
+    if args.start:
+        git_cmd.append(f"--since={args.start} 00:00:00")
+    if args.end:
+        git_cmd.append(f"--until={args.end} 23:59:59")
+    else:
+        today = datetime.datetime.now().strftime("%Y-%m-%d 23:59:59")
+    if args.count is not None:
+        if args.count <= 0:
+            return print("Error: --count must be a positive integer.")
+
+        git_cmd.append(f"-n{args.count}")
+
+        
+    print("Running git log command...")
+    out = subprocess.check_output(git_cmd, cwd=path)
 
 
     doc = Document()
@@ -217,6 +237,3 @@ def parseLog(raw: bytes, url: str):
             }
 
     return {'commits': commits, 'releases': releases}
-
-# markers
-# filters on the cli
