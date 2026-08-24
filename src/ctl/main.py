@@ -11,11 +11,10 @@ def validate_date(date: str):
     except ValueError:
         return argparse.ArgumentTypeError("Invalid date format. Expected dd/mm/yyyy.")
 
-
-def get_resource_path(relative_path: str) -> Path:
-    if hasattr(sys, '_MEIPASS'):
-        return Path(sys._MEIPASS) / relative_path
-    return Path(__file__).parent.parent / relative_path
+def get_resource_dir() -> str:
+    if getattr(sys, "frozen", False):
+        return os.path.join(sys._MEIPASS, "ctl")
+    return os.path.dirname(os.path.abspath(__file__))
 
 def Main():
     global path
@@ -77,17 +76,23 @@ def Main():
         details=doc.contents[2].render(),
     )
 
-    temp_path = get_resource_path("ctl/out.tex")
-    with open(temp_path, "w") as f:
+    resource_dir = get_resource_dir()
+    build_dir = tempfile.mkdtemp(prefix="ctl-build-")
+
+    shutil.copy(os.path.join(resource_dir, "report_format.cls"), build_dir)
+
+    tex_path = os.path.join(build_dir, "out.tex")
+    with open(tex_path, "w") as f:
         f.write(rendered)
 
     subprocess.run([
         "xelatex",
         "-interaction=nonstopmode",
         "out.tex",
-    ], check=True, cwd="src/ctl")
+    ], check=True, cwd=build_dir)
 
-    if not os.path.exists("src/ctl/out.pdf"):
+    pdf_path = os.path.join(build_dir, "out.pdf")
+    if not os.path.exists(pdf_path):
         return print("PDF file not generated.")
 
     print("Cleaning up temporary files...")
@@ -95,7 +100,11 @@ def Main():
     if temp_dir is not None:
         shutil.rmtree(temp_dir, ignore_errors=True)
 
-    print("PDF file generated: file:///" + os.path.abspath("src/ctl/out.pdf"), "(CTRL + Click to open).")
+    final_pdf = os.path.join(os.getcwd(), "out.pdf")
+    shutil.copy(pdf_path, final_pdf)
+    shutil.rmtree(build_dir, ignore_errors=True)
+
+    print("PDF file generated: file:///" + final_pdf.replace("\\", "/"), "(CTRL + Click to open).")
     return
 
 
