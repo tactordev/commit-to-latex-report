@@ -7,7 +7,7 @@ This is a project where I was tasked with creating a professional document for s
 ## Installation
 ### Method 1:
 Download the executable file from the releases tab.
-
+Enter the command terminal and cd into the download directory.
 
 ### Method 2:
 **Prerequisites:** [UV](https://docs.astral.sh/uv/getting-started/installation/) and a [Tex distribution e.g. MikTex](https://miktex.org/download).
@@ -19,7 +19,7 @@ To use the tool:
 4. Follow the usage as described below.
 
 ## Usage
-To use the tool, you will need to run it using `uv run ctl` with specified parameters.
+To use the tool, you will need to run it using `ctl` or `uv run ctl` with specified parameters.
 - `--url=https://github.com/author/repository` [REQUIRED]: this specifies a github repository to pull commit and information from.
 - `--start=dd/mm/yyyy`: this specifies a start date for the commits and is defaulted to the creation of the repository.
 - `--end=dd/mm/yyyy`: this specifies an end date for the commits and is defaulted to the date the tool was run.
