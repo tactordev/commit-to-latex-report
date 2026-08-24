@@ -2,7 +2,7 @@ import os, shutil, re, os, subprocess, argparse, tempfile, datetime, time
 from .latex import Document
 import stat
 from pathlib import Path
-
+import sys
 
 def validate_date(date: str):
     try:
@@ -10,6 +10,12 @@ def validate_date(date: str):
         return dt.strftime("%Y-%m-%d")
     except ValueError:
         return argparse.ArgumentTypeError("Invalid date format. Expected dd/mm/yyyy.")
+
+
+def get_resource_path(relative_path: str) -> Path:
+    if hasattr(sys, '_MEIPASS'):
+        return Path(sys._MEIPASS) / relative_path
+    return Path(__file__).parent.parent / relative_path
 
 def Main():
     global path
@@ -71,8 +77,8 @@ def Main():
         details=doc.contents[2].render(),
     )
 
-
-    with open("src/ctl/out.tex", "w") as f:
+    temp_path = get_resource_path("ctl/out.tex")
+    with open(temp_path, "w") as f:
         f.write(rendered)
 
     subprocess.run([
