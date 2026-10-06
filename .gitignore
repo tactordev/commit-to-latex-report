@@ -183,7 +183,7 @@ cython_debug/
 
 
 
-
+dist
 *uv*
 *.pdf
 *.gz
