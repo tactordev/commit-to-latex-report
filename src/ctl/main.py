@@ -88,12 +88,13 @@ def Main():
     subprocess.run([
         "xelatex",
         "-interaction=nonstopmode",
-        "out.tex",
-    ], check=True, cwd=build_dir)
+        "out.tex",  
+    ], check=False, cwd=build_dir)
+
 
     pdf_path = os.path.join(build_dir, "out.pdf")
     if not os.path.exists(pdf_path):
-        return print("PDF file not generated.")
+        raise RuntimeError("XeLaTeX PDF generation failed.")
 
     print("Cleaning up temporary files...")
 

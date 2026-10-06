@@ -14,7 +14,9 @@
 \RequirePackage{lmodern}
 \RequirePackage{colortbl}
 
-
+\makeatletter
+\providecommand{\insert@pcolumn}{}
+\makeatother
 
 \definecolor{purp}{HTML}{310062}
 \definecolor{lightgrey}{HTML}{F5F5F5}
