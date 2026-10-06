@@ -9,9 +9,9 @@
 \RequirePackage{fancyhdr}
 \RequirePackage{amssymb}
 \RequirePackage[hidelinks]{hyperref}
+\RequirePackage{array}
 \RequirePackage{tabularx, booktabs}
 \RequirePackage{lmodern}
-\RequirePackage{array}
 \RequirePackage{colortbl}
 
 
